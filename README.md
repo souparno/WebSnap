@@ -1,4 +1,4 @@
-# Website Cloner
+# WebSnap
 
 This project is a Python script to download a website to a local directory. It utilizes Tor for anonymous browsing and focuses on downloading specific file types and updating local links. 
 
