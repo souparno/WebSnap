@@ -24,6 +24,9 @@ class TestUpdateLocalLinks(unittest.TestCase):
         </html>
         '''
 
+    def normalize_whitespace(self, text):
+        return '\n'.join(line.strip() for line in text.strip().splitlines())
+
     def test_get_local_filename_with_query(self):
         url = "http://example.com/foo.js?version=1.2"
         local_path = "site_clone"
@@ -67,10 +70,7 @@ class TestUpdateLocalLinks(unittest.TestCase):
         local_path = 'site_clone'
         expected_local_filename = os.path.join(local_path, 'index.html')
         result = get_local_filename(url, local_path)
-        self.assertEqual(result, expected_local_filename)
- 
-    def normalize_whitespace(self, text):
-        return '\n'.join(line.strip() for line in text.strip().splitlines())
+        self.assertEqual(result, expected_local_filename) 
     
     def test_get_local_filename(self):
         url = "http://example.com/foo.js?version=1.2"
@@ -91,11 +91,12 @@ class TestUpdateLocalLinks(unittest.TestCase):
         </body>
         </html>
         '''
-        to_visit = set()
+        to_visit = []
         visited = set()
+        in_queue = set()
         
         def mock_add_to_queue(link):
-            add_to_queue(link, to_visit, visited)
+            add_to_queue(link, to_visit, visited, in_queue)
         
         extract_links(content, self.base_url, mock_add_to_queue)
         
@@ -104,14 +105,17 @@ class TestUpdateLocalLinks(unittest.TestCase):
             'http://example.com/images/logo.png',
             'http://example.com/styles/main.css'
         }
-        
-        self.assertEqual(to_visit, expected_to_visit)
+ 
+        self.assertEqual(set(to_visit), expected_to_visit)
 
     def test_extract_links(self):
         content = '''
         <html>
         <head>
-            <script src="http://example.com/foo.js"></script>
+            <script src="./foo.js"></script>
+            <script>
+                $("#id").html()
+            </script>
         </head>
         <body>
             <h1>Test Links</h1>
@@ -121,16 +125,17 @@ class TestUpdateLocalLinks(unittest.TestCase):
         </html>
         '''
         base_url = "http://example.com"
-        expected_links = {
+
+        expected_links = [
             'http://example.com/foo.js',
             'http://example.com/images/logo.png',
             'http://example.com/styles/main.css'
-        }
+        ]
 
-        found_links = set()
+        found_links = []
 
         def add_link_to_set(link):
-            found_links.add(link)
+            found_links.append(link)
 
         extract_links(content, base_url, add_link_to_set)
 

@@ -5,6 +5,9 @@ import string
 from urllib.parse import urljoin, urlparse, quote
 import logging
 
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # List of file extensions to download
 FILE_EXTENSIONS = [
     ".svg", ".jpg", ".jpeg", ".png", ".gif", ".ico", ".css", ".js", ".html",
@@ -104,17 +107,20 @@ def process_html_file(local_filename, current_url, local_path, add_to_queue_func
     except Exception as e:
         logging.error(f"Error processing {local_filename}: {e}")
 
-def add_to_queue(link, to_visit, visited):
-    if link not in to_visit and link not in visited:
-        to_visit.add(link)
+def add_to_queue(link, to_visit, visited, in_queue):
+    if link not in visited and link not in in_queue:
+        to_visit.append(link)
+        in_queue.add(link)
 
 def download_site(url, local_path):
     visited = set()
-    to_visit = {url}
+    in_queue = set()
+    to_visit = [url]
+    in_queue.add(url)
     session = create_tor_session()
     
     while to_visit:
-        current_url = to_visit.pop()
+        current_url = to_visit.pop(0)
         visited.add(current_url)
 
         local_filename = get_local_filename(current_url, local_path)
@@ -125,4 +131,4 @@ def download_site(url, local_path):
 
         if download_file(session, current_url, local_filename):
             if any(local_filename.endswith(ext) for ext in SCAN_EXTENSIONS):
-                process_html_file(local_filename, current_url, local_path, lambda link: add_to_queue(link, to_visit, visited))
+                process_html_file(local_filename, current_url, local_path, lambda link: add_to_queue(link, to_visit, visited, in_queue))
